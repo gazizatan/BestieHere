@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
+import '../widgets/bestie_bottom_nav_bar.dart';
 
 class SafePlace {
   final String name;
@@ -177,94 +178,118 @@ class _SafePlacesScreenState extends State<SafePlacesScreen> {
               separatorBuilder: (context, i) => const SizedBox(width: 16),
               itemBuilder: (context, index) {
                 final place = _safePlaces[index];
-                return Container(
-                  width: 220,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFE0F7), Color(0xFFFFA6C9)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                return GestureDetector(
+                  onTap: () {
+                    _mapController.move(place.location, 16);
+                  },
+                  child: Container(
+                    width: 220,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFE0F7), Color(0xFFFFA6C9)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFFA6C9).withOpacity(0.13),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFA6C9).withOpacity(0.13),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  margin: const EdgeInsets.only(top: 8, bottom: 8),
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.spa_rounded, color: Color(0xFFFFA6C9), size: 28),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              place.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFB23A48),
-                                fontFamily: 'ComicNeue',
+                    margin: const EdgeInsets.only(top: 8, bottom: 8),
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.spa_rounded, color: Color(0xFFFFA6C9), size: 28),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                place.name,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  fontFamily: 'ComicNeue',
+                                  shadows: [
+                                    Shadow(
+                                      color: Color(0xFFB23A48),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        place.description,
-                        style: const TextStyle(
-                          color: Color(0xFFB23A48),
-                          fontSize: 14,
-                          fontFamily: 'ComicNeue',
+                          ],
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          const Icon(Icons.phone, color: Color(0xFFB23A48), size: 18),
-                          const SizedBox(width: 6),
-                          Text(
-                            place.phoneNumber,
-                            style: const TextStyle(
-                              color: Color(0xFFB23A48),
-                              fontSize: 14,
-                              fontFamily: 'ComicNeue',
-                              fontWeight: FontWeight.w600,
-                            ),
+                        const SizedBox(height: 10),
+                        Text(
+                          place.description,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontFamily: 'ComicNeue',
+                            shadows: [
+                              Shadow(
+                                color: Color(0xFFB23A48),
+                                blurRadius: 3,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFA6C9),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 4,
-                          ),
-                          icon: const Icon(Icons.map),
-                          label: const Text('Show on Map'),
-                          onPressed: () {
-                            _mapController.move(place.location, 16);
-                          },
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.phone, color: Colors.white, size: 18, shadows: [Shadow(color: Color(0xFFB23A48), blurRadius: 2)]),
+                            const SizedBox(width: 6),
+                            Text(
+                              place.phoneNumber,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontFamily: 'ComicNeue',
+                                fontWeight: FontWeight.w600,
+                                shadows: [
+                                  Shadow(
+                                    color: Color(0xFFB23A48),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFA6C9),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 4,
+                              shadowColor: const Color(0xFFB23A48).withOpacity(0.2),
+                            ),
+                            icon: const Icon(Icons.map),
+                            label: const Text('Show on Map', style: TextStyle(fontWeight: FontWeight.bold, shadows: [Shadow(color: Color(0xFFB23A48), blurRadius: 2)])),
+                            onPressed: () {
+                              _mapController.move(place.location, 16);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -272,6 +297,7 @@ class _SafePlacesScreenState extends State<SafePlacesScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: const BestieBottomNavBar(currentIndex: 1),
     );
   }
 }

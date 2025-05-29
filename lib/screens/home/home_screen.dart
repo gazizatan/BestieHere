@@ -4,14 +4,17 @@ import '../safe_places_screen.dart';
 import '../contacts_screen.dart';
 import '../safety_screen.dart';
 import '../map_screen.dart';
+import 'package:provider/provider.dart';
+import '../../main.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context).theme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF6FA),
+      backgroundColor: theme.backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -21,17 +24,13 @@ class HomeScreen extends StatelessWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(28),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFFFA6C9), Color(0xFFFBC2EB)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  gradient: theme.primaryGradient,
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(40),
                     bottomRight: Radius.circular(40),
                   ),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: Color(0x33FFB6C1),
                       blurRadius: 24,
@@ -56,7 +55,7 @@ class HomeScreen extends StatelessWidget {
                             letterSpacing: 1.5,
                             shadows: [
                               Shadow(
-                                color: Colors.pinkAccent.withOpacity(0.3),
+                                color: theme.primaryColor.withOpacity(0.3),
                                 blurRadius: 8,
                               ),
                             ],
@@ -87,7 +86,7 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.flash_on, color: Color(0xFFFFA6C9), size: 28),
+                        Icon(Icons.flash_on, color: theme.primaryColor, size: 28),
                         const SizedBox(width: 8),
                         Text(
                           'Quick Actions',
@@ -113,30 +112,30 @@ class HomeScreen extends StatelessWidget {
                           'Safe Places',
                           'Find nearby safe locations',
                           Icons.spa_rounded,
-                          const Color(0xFFFFA6C9),
+                          theme.primaryColor,
                           () => Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => const SafePlacesScreen(),
                             ),
                           ),
-                          bgGradient: const [Color(0xFFFFE0F7), Color(0xFFFFA6C9)],
-                          iconBg: const Color(0xFFFBC2EB),
+                          bgGradient: [theme.backgroundColor, theme.primaryColor],
+                          iconBg: theme.secondaryColor,
                         ),
                         _buildActionCard(
                           context,
                           'Trusted Contacts',
                           'Manage your emergency contacts',
                           Icons.people_alt_rounded,
-                          const Color(0xFFFBC2EB),
+                          theme.secondaryColor,
                           () => Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => const ContactsScreen(),
                             ),
                           ),
-                          bgGradient: const [Color(0xFFFBC2EB), Color(0xFFFFA699)],
-                          iconBg: const Color(0xFFFFA699),
+                          bgGradient: [theme.secondaryColor, theme.primaryColor],
+                          iconBg: theme.primaryColor,
                         ),
                         _buildActionCard(
                           context,
@@ -150,23 +149,18 @@ class HomeScreen extends StatelessWidget {
                               builder: (context) => const MapScreen(),
                             ),
                           ),
-                          bgGradient: const [Color(0xFFFFE0F7), Color(0xFFFBC2EB)],
-                          iconBg: const Color(0xFFFFA699),
+                          bgGradient: [theme.backgroundColor, theme.secondaryColor],
+                          iconBg: theme.primaryColor,
                         ),
                         _buildActionCard(
                           context,
                           'Safety Tips',
                           'Learn important safety measures',
                           Icons.star_rounded,
-                          const Color(0xFFFFC2D1),
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SafetyScreen(),
-                            ),
-                          ),
-                          bgGradient: const [Color(0xFFFFC2D1), Color(0xFFFBC2EB)],
-                          iconBg: const Color(0xFFFFA699),
+                          theme.primaryColor,
+                          () => Navigator.pushNamed(context, '/safety-tips'),
+                          bgGradient: [theme.primaryColor, theme.secondaryColor],
+                          iconBg: theme.secondaryColor,
                         ),
                       ],
                     ),
@@ -179,17 +173,20 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: Implement emergency action
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SafetyScreen()),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFA6C9),
+                    backgroundColor: theme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
                     elevation: 8,
-                    shadowColor: const Color(0xFFFFA6C9).withOpacity(0.3),
+                    shadowColor: theme.primaryColor.withOpacity(0.3),
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -213,6 +210,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const BestieBottomNavBar(currentIndex: 0),
     );
   }
 
@@ -274,9 +272,15 @@ class HomeScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: color,
+                  color: Colors.white,
                   fontFamily: 'ComicNeue',
                   letterSpacing: 1.1,
+                  shadows: [
+                    Shadow(
+                      color: color.withOpacity(0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -285,13 +289,86 @@ class HomeScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: color.withOpacity(0.7),
+                  color: Colors.white.withOpacity(0.95),
                   fontFamily: 'ComicNeue',
+                  shadows: [
+                    Shadow(
+                      color: color.withOpacity(0.4),
+                      blurRadius: 3,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class BestieBottomNavBar extends StatelessWidget {
+  final int currentIndex;
+  const BestieBottomNavBar({super.key, required this.currentIndex});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Color(0xFFFFA6C9),
+            Color(0xFFFBC2EB),
+          ],
+        ),
+      ),
+      child: BottomNavigationBar(
+        currentIndex: currentIndex,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.5),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: 'Map',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message),
+            label: 'Messages',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+        onTap: (index) {
+          if (index == currentIndex) return;
+          switch (index) {
+            case 0:
+              Navigator.pushReplacementNamed(context, '/');
+              break;
+            case 1:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MapScreen()),
+              );
+              break;
+            case 2:
+              Navigator.pushReplacementNamed(context, '/messages');
+              break;
+            case 3:
+              Navigator.pushReplacementNamed(context, '/profile');
+              break;
+          }
+        },
       ),
     );
   }

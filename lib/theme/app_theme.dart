@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+class AppThemeData {
+  final Color primaryColor;
+  final Color secondaryColor;
+  final Color backgroundColor;
+  final Gradient primaryGradient;
+  final Gradient navBarGradient;
+
+  AppThemeData({
+    required this.primaryColor,
+    required this.secondaryColor,
+    required this.backgroundColor,
+    required this.primaryGradient,
+    required this.navBarGradient,
+  });
+}
+
 class AppTheme {
   // Light theme colors
   static const Color primaryColor = Color(0xFFFF69B4); // Hot Pink
@@ -232,6 +248,38 @@ class AppTheme {
       unselectedItemColor: Colors.grey,
       type: BottomNavigationBarType.fixed,
       elevation: 8,
+    ),
+  );
+
+  static final light = AppThemeData(
+    primaryColor: const Color(0xFFFFA6C9),
+    secondaryColor: const Color(0xFFFBC2EB),
+    backgroundColor: const Color(0xFFFDF6FA),
+    primaryGradient: const LinearGradient(
+      colors: [Color(0xFFFFA6C9), Color(0xFFFBC2EB)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    navBarGradient: const LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [Color(0xFFFFA6C9), Color(0xFFFBC2EB)],
+    ),
+  );
+
+  static final dark = AppThemeData(
+    primaryColor: const Color(0xFF7B2FF2),
+    secondaryColor: const Color(0xFFf357a8),
+    backgroundColor: const Color(0xFF1A1333),
+    primaryGradient: const LinearGradient(
+      colors: [Color(0xFF7B2FF2), Color(0xFFf357a8)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    navBarGradient: const LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [Color(0xFF7B2FF2), Color(0xFFf357a8)],
     ),
   );
 }
