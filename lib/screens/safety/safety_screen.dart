@@ -360,7 +360,7 @@ class _SafetyScreenState extends State<SafetyScreen> {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: theme.secondaryColor.withOpacity(0.13),
+                          color: theme.cardColor,
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
@@ -379,7 +379,7 @@ class _SafetyScreenState extends State<SafetyScreen> {
                               child: Text(
                                 tip,
                                 style: TextStyle(
-                                  color: theme.primaryColor,
+                                  color: theme.textColor,
                                   fontSize: 15,
                                   fontFamily: 'ComicNeue',
                                 ),

@@ -3,6 +3,7 @@ import '../screens/home/home_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/safety/safety_screen.dart';
 import '../screens/messages_screen.dart';
+import '../screens/safety_tips_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -19,6 +20,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const SafetyScreen());
       case '/messages':
         return MaterialPageRoute(builder: (_) => const MessagesScreen());
+      case '/safety-tips':
+        return MaterialPageRoute(builder: (_) => const SafetyTipsScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

@@ -5,6 +5,8 @@ class AppThemeData {
   final Color primaryColor;
   final Color secondaryColor;
   final Color backgroundColor;
+  final Color cardColor;
+  final Color textColor;
   final Gradient primaryGradient;
   final Gradient navBarGradient;
 
@@ -12,6 +14,8 @@ class AppThemeData {
     required this.primaryColor,
     required this.secondaryColor,
     required this.backgroundColor,
+    required this.cardColor,
+    required this.textColor,
     required this.primaryGradient,
     required this.navBarGradient,
   });
@@ -255,6 +259,8 @@ class AppTheme {
     primaryColor: const Color(0xFFFFA6C9),
     secondaryColor: const Color(0xFFFBC2EB),
     backgroundColor: const Color(0xFFFDF6FA),
+    cardColor: Colors.white,
+    textColor: Color(0xFFB23A48),
     primaryGradient: const LinearGradient(
       colors: [Color(0xFFFFA6C9), Color(0xFFFBC2EB)],
       begin: Alignment.topLeft,
@@ -269,17 +275,19 @@ class AppTheme {
 
   static final dark = AppThemeData(
     primaryColor: const Color(0xFF7B2FF2),
-    secondaryColor: const Color(0xFFf357a8),
-    backgroundColor: const Color(0xFF1A1333),
+    secondaryColor: const Color(0xFFBA68C8),
+    backgroundColor: const Color(0xFF18122B),
+    cardColor: const Color(0xFF231942),
+    textColor: Colors.white,
     primaryGradient: const LinearGradient(
-      colors: [Color(0xFF7B2FF2), Color(0xFFf357a8)],
+      colors: [Color(0xFF7B2FF2), Color(0xFFBA68C8)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     navBarGradient: const LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
-      colors: [Color(0xFF7B2FF2), Color(0xFFf357a8)],
+      colors: [Color(0xFF7B2FF2), Color(0xFFBA68C8)],
     ),
   );
 }
