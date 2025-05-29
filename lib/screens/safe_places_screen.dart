@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
@@ -27,9 +28,9 @@ class SafePlacesScreen extends StatefulWidget {
 
 class _SafePlacesScreenState extends State<SafePlacesScreen> {
   final LocationService _locationService = LocationService();
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   Position? _currentPosition;
-  final Set<Marker> _markers = {};
+  LatLng? _currentLatLng;
   final List<SafePlace> _safePlaces = [
     SafePlace(
       name: 'Crisis Center for Women',
@@ -55,7 +56,6 @@ class _SafePlacesScreenState extends State<SafePlacesScreen> {
   void initState() {
     super.initState();
     _getCurrentLocation();
-    _addSafePlaceMarkers();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -63,38 +63,72 @@ class _SafePlacesScreenState extends State<SafePlacesScreen> {
       final position = await _locationService.getCurrentLocation();
       setState(() {
         _currentPosition = position;
-        _markers.add(
-          Marker(
-            markerId: const MarkerId('current_location'),
-            position: LatLng(position.latitude, position.longitude),
-            infoWindow: const InfoWindow(title: 'Your Location'),
+        _currentLatLng = LatLng(position.latitude, position.longitude);
+      });
+      _mapController.move(_currentLatLng!, 14);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error getting location: \\n${e.toString()}'),
+            backgroundColor: AppTheme.errorColor,
           ),
         );
-      });
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(position.latitude, position.longitude),
-          15,
-        ),
-      );
-    } catch (e) {
-      // Handle error
+      }
     }
   }
 
-  void _addSafePlaceMarkers() {
-    for (var place in _safePlaces) {
-      _markers.add(
+  List<Marker> get _buildMarkers {
+    final markers = <Marker>[];
+    if (_currentLatLng != null) {
+      markers.add(
         Marker(
-          markerId: MarkerId(place.name),
-          position: place.location,
-          infoWindow: InfoWindow(
-            title: place.name,
-            snippet: place.description,
+          point: _currentLatLng!,
+          width: 44,
+          height: 44,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.85),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.person_pin_circle, color: Colors.white, size: 28),
           ),
         ),
       );
     }
+    for (final place in _safePlaces) {
+      markers.add(
+        Marker(
+          point: place.location,
+          width: 44,
+          height: 44,
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFA6C9).withOpacity(0.85),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFA6C9).withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.spa_rounded, color: Colors.white, size: 26),
+          ),
+        ),
+      );
+    }
+    return markers;
   }
 
   @override
@@ -102,81 +136,135 @@ class _SafePlacesScreenState extends State<SafePlacesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Safe Places'),
+        backgroundColor: const Color(0xFFFFA6C9),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Column(
         children: [
           Expanded(
-            child: _currentPosition == null
+            child: _currentLatLng == null
                 ? const Center(child: CircularProgressIndicator())
-                : GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: LatLng(
-                        _currentPosition!.latitude,
-                        _currentPosition!.longitude,
-                      ),
-                      zoom: 15,
+                : ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
                     ),
-                    onMapCreated: (controller) {
-                      _mapController = controller;
-                    },
-                    markers: _markers,
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: true,
+                    child: FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        center: _currentLatLng,
+                        zoom: 14,
+                        maxZoom: 18,
+                        minZoom: 5,
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.bestiehere.app',
+                        ),
+                        MarkerLayer(markers: _buildMarkers),
+                      ],
+                    ),
                   ),
           ),
           Container(
-            height: 200,
-            padding: const EdgeInsets.all(16),
-            child: ListView.builder(
+            height: 210,
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+            child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _safePlaces.length,
+              separatorBuilder: (context, i) => const SizedBox(width: 16),
               itemBuilder: (context, index) {
                 final place = _safePlaces[index];
-                return Card(
-                  margin: const EdgeInsets.only(right: 16),
-                  child: Container(
-                    width: 200,
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          place.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          place.description,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          place.phoneNumber,
-                          style: const TextStyle(
-                            color: AppTheme.primaryColor,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const Spacer(),
-                        ElevatedButton(
-                          onPressed: () {
-                            _mapController?.animateCamera(
-                              CameraUpdate.newLatLngZoom(
-                                place.location,
-                                15,
-                              ),
-                            );
-                          },
-                          child: const Text('Show on Map'),
-                        ),
-                      ],
+                return Container(
+                  width: 220,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFE0F7), Color(0xFFFFA6C9)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFA6C9).withOpacity(0.13),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  margin: const EdgeInsets.only(top: 8, bottom: 8),
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.spa_rounded, color: Color(0xFFFFA6C9), size: 28),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              place.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFB23A48),
+                                fontFamily: 'ComicNeue',
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        place.description,
+                        style: const TextStyle(
+                          color: Color(0xFFB23A48),
+                          fontSize: 14,
+                          fontFamily: 'ComicNeue',
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          const Icon(Icons.phone, color: Color(0xFFB23A48), size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            place.phoneNumber,
+                            style: const TextStyle(
+                              color: Color(0xFFB23A48),
+                              fontSize: 14,
+                              fontFamily: 'ComicNeue',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFA6C9),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 4,
+                          ),
+                          icon: const Icon(Icons.map),
+                          label: const Text('Show on Map'),
+                          onPressed: () {
+                            _mapController.move(place.location, 16);
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },

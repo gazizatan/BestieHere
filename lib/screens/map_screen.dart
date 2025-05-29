@@ -82,7 +82,14 @@ class _MapScreenState extends State<MapScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.9),
+              AppTheme.secondaryColor.withOpacity(0.9),
+            ],
+          ),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -93,19 +100,23 @@ class _MapScreenState extends State<MapScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Colors.white.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 16),
             Text(
               'Share Location',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.telegram, color: Color(0xFF0088CC)),
               title: const Text('Share on Telegram'),
+              textColor: Colors.white,
               onTap: () async {
                 final url = Uri.parse('https://t.me/share/url?url=$locationUrl&text=My current location');
                 if (await canLaunchUrl(url)) {
@@ -133,6 +144,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
               title: const Text('Share on WhatsApp'),
+              textColor: Colors.white,
               onTap: () async {
                 final url = Uri.parse('https://wa.me/?text=My current location: $locationUrl');
                 if (await canLaunchUrl(url)) {
@@ -142,8 +154,67 @@ class _MapScreenState extends State<MapScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.copy, color: AppTheme.primaryColor),
+              leading: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE1306C),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text(
+                    'IG',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+              title: const Text('Share on Instagram'),
+              textColor: Colors.white,
+              onTap: () async {
+                final url = Uri.parse('https://www.instagram.com/yeeeerkhan/');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url);
+                }
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0077B5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text(
+                    'in',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+              title: const Text('Share on LinkedIn'),
+              textColor: Colors.white,
+              onTap: () async {
+                final url = Uri.parse('https://www.linkedin.com/in/liana-smatulla-382835360/');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url);
+                }
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy, color: Colors.white),
               title: const Text('Copy Location Link'),
+              textColor: Colors.white,
               onTap: () {
                 // TODO: Implement copy to clipboard
                 Navigator.pop(context);
@@ -163,87 +234,113 @@ class _MapScreenState extends State<MapScreen> {
         title: const Text('Share Location'),
         backgroundColor: AppTheme.primaryColor,
       ),
-      body: Stack(
-        children: [
-          _currentPosition == null
-              ? const Center(child: CircularProgressIndicator())
-              : FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: LatLng(
-                      _currentPosition!.latitude,
-                      _currentPosition!.longitude,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.backgroundColor,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            _currentPosition == null
+                ? const Center(child: CircularProgressIndicator())
+                : FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      ),
+                      initialZoom: 15,
                     ),
-                    initialZoom: 15,
+                    children: [
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.example.bestiehere',
+                      ),
+                      MarkerLayer(markers: _markers),
+                    ],
                   ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.bestiehere',
-                    ),
-                    MarkerLayer(markers: _markers),
-                  ],
-                ),
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: Column(
-              children: [
-                FloatingActionButton(
-                  onPressed: _getCurrentLocation,
-                  backgroundColor: AppTheme.primaryColor,
-                  child: const Icon(Icons.my_location),
-                ),
-                const SizedBox(height: 16),
-                FloatingActionButton(
-                  onPressed: _showShareOptions,
-                  backgroundColor: AppTheme.primaryColor,
-                  child: const Icon(Icons.share),
-                ),
-              ],
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: Column(
+                children: [
+                  FloatingActionButton(
+                    onPressed: _getCurrentLocation,
+                    backgroundColor: AppTheme.primaryColor,
+                    child: const Icon(Icons.my_location),
+                  ),
+                  const SizedBox(height: 16),
+                  FloatingActionButton(
+                    onPressed: _showShareOptions,
+                    backgroundColor: AppTheme.primaryColor,
+                    child: const Icon(Icons.share),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1, // Map tab index
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.primaryColor,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.secondaryColor,
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Messages',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(context, '/home');
-              break;
-            case 1:
-              // Already on map screen
-              break;
-            case 2:
-              Navigator.pushReplacementNamed(context, '/messages');
-              break;
-            case 3:
-              Navigator.pushReplacementNamed(context, '/profile');
-              break;
-          }
-        },
+        ),
+        child: BottomNavigationBar(
+          currentIndex: 1, // Map tab index
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white.withOpacity(0.5),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.map),
+              label: 'Map',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.message),
+              label: 'Messages',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+          onTap: (index) {
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(context, '/home');
+                break;
+              case 1:
+                // Already on map screen
+                break;
+              case 2:
+                Navigator.pushReplacementNamed(context, '/messages');
+                break;
+              case 3:
+                Navigator.pushReplacementNamed(context, '/profile');
+                break;
+            }
+          },
+        ),
       ),
     );
   }
