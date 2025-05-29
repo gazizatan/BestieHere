@@ -79,9 +79,9 @@ class SettingsScreen extends StatelessWidget {
             context,
             'About',
             [
-              ListTile(
-                title: const Text('Version'),
-                subtitle: const Text('1.0.0'),
+              const ListTile(
+                title: Text('Version'),
+                subtitle: Text('1.0.0'),
               ),
               ListTile(
                 title: const Text('Terms of Service'),

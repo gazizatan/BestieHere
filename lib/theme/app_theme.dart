@@ -15,10 +15,9 @@ class AppTheme {
 
   static ThemeData get lightTheme => ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.light(
+        colorScheme: const ColorScheme.light(
           primary: primaryColor,
           secondary: accentColor,
-          background: backgroundLight,
           surface: surfaceLight,
           error: errorColor,
         ),
@@ -55,10 +54,9 @@ class AppTheme {
 
   static ThemeData get darkTheme => ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.dark(
+        colorScheme: const ColorScheme.dark(
           primary: primaryColor,
           secondary: accentColor,
-          background: backgroundDark,
           surface: surfaceDark,
           error: errorColor,
         ),

@@ -215,7 +215,8 @@ class _SafetyScreenState extends State<SafetyScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.emergency, color: AppTheme.accentColor, size: 32),
+              const Icon(Icons.emergency,
+                  color: AppTheme.accentColor, size: 32),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
