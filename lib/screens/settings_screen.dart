@@ -8,118 +8,217 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
+        backgroundColor: AppTheme.primaryColor,
       ),
-      body: ListView(
-        children: [
-          _buildSection(
-            context,
-            'Appearance',
-            [
-              Consumer<ThemeProvider>(
-                builder: (context, themeProvider, child) {
-                  return SwitchListTile(
-                    title: const Text('Dark Mode'),
-                    subtitle: const Text('Toggle dark/light theme'),
-                    value: themeProvider.isDarkMode,
-                    onChanged: (value) => themeProvider.setThemeMode(value),
-                  );
-                },
-              ),
-            ],
-          ),
-          _buildSection(
-            context,
-            'Notifications',
-            [
-              SwitchListTile(
-                title: const Text('Emergency Alerts'),
-                subtitle: const Text('Get notified about emergency situations'),
-                value: true,
-                onChanged: (value) {
-                  // TODO: Implement notification settings
-                },
-              ),
-              SwitchListTile(
-                title: const Text('Location Updates'),
-                subtitle:
-                    const Text('Get notified when friends share location'),
-                value: true,
-                onChanged: (value) {
-                  // TODO: Implement location notification settings
-                },
-              ),
-            ],
-          ),
-          _buildSection(
-            context,
-            'Privacy',
-            [
-              ListTile(
-                title: const Text('Location Sharing'),
-                subtitle: const Text('Manage who can see your location'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  // TODO: Implement location sharing settings
-                },
-              ),
-              ListTile(
-                title: const Text('Emergency Contacts'),
-                subtitle: const Text('Manage your emergency contacts'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  // TODO: Implement emergency contacts settings
-                },
-              ),
-            ],
-          ),
-          _buildSection(
-            context,
-            'About',
-            [
-              const ListTile(
-                title: Text('Version'),
-                subtitle: Text('1.0.0'),
-              ),
-              ListTile(
-                title: const Text('Terms of Service'),
-                onTap: () {
-                  // TODO: Show terms of service
-                },
-              ),
-              ListTile(
-                title: const Text('Privacy Policy'),
-                onTap: () {
-                  // TODO: Show privacy policy
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSection(
-      BuildContext context, String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDarkMode
+                ? [AppTheme.darkBackgroundColor, AppTheme.darkSurfaceColor]
+                : [AppTheme.backgroundColor, Colors.white],
           ),
         ),
-        ...children,
-        const Divider(),
-      ],
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Appearance',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                              color: isDarkMode
+                                  ? AppTheme.darkSecondaryColor
+                                  : AppTheme.primaryColor,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Dark Mode',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: isDarkMode,
+                          onChanged: (value) {
+                            themeProvider.setThemeMode(
+                              value ? ThemeMode.dark : ThemeMode.light,
+                            );
+                          },
+                          activeColor: AppTheme.darkSecondaryColor,
+                          activeTrackColor: AppTheme.darkPrimaryColor,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Notifications',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text('Emergency Alerts'),
+                      subtitle: const Text('Get notified about emergency situations'),
+                      value: true,
+                      onChanged: (value) {
+                        // TODO: Implement notification toggle
+                      },
+                      activeColor: isDarkMode
+                          ? AppTheme.darkSecondaryColor
+                          : AppTheme.primaryColor,
+                    ),
+                    SwitchListTile(
+                      title: const Text('Location Updates'),
+                      subtitle: const Text('Share your location with trusted contacts'),
+                      value: true,
+                      onChanged: (value) {
+                        // TODO: Implement location sharing toggle
+                      },
+                      activeColor: isDarkMode
+                          ? AppTheme.darkSecondaryColor
+                          : AppTheme.primaryColor,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'About',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      leading: Icon(
+                        Icons.info_outline,
+                        color: isDarkMode
+                            ? AppTheme.darkSecondaryColor
+                            : AppTheme.primaryColor,
+                      ),
+                      title: const Text('Version'),
+                      subtitle: const Text('1.0.0'),
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.privacy_tip_outlined,
+                        color: isDarkMode
+                            ? AppTheme.darkSecondaryColor
+                            : AppTheme.primaryColor,
+                      ),
+                      title: const Text('Privacy Policy'),
+                      onTap: () {
+                        // TODO: Navigate to privacy policy
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.description_outlined,
+                        color: isDarkMode
+                            ? AppTheme.darkSecondaryColor
+                            : AppTheme.primaryColor,
+                      ),
+                      title: const Text('Terms of Service'),
+                      onTap: () {
+                        // TODO: Navigate to terms of service
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 3, // Settings tab index
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: isDarkMode
+            ? AppTheme.darkSecondaryColor
+            : AppTheme.primaryColor,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: 'Map',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message),
+            label: 'Messages',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.pushReplacementNamed(context, '/home');
+              break;
+            case 1:
+              Navigator.pushReplacementNamed(context, '/map');
+              break;
+            case 2:
+              Navigator.pushReplacementNamed(context, '/messages');
+              break;
+            case 3:
+              // Already on settings screen
+              break;
+          }
+        },
+      ),
     );
   }
 }

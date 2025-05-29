@@ -1,166 +1,342 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class EmergencyContact {
-  final String id;
   final String name;
   final String phoneNumber;
   final String relationship;
+  final String? telegramUsername;
 
   EmergencyContact({
-    required this.id,
     required this.name,
     required this.phoneNumber,
     required this.relationship,
+    this.telegramUsername,
   });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'phoneNumber': phoneNumber,
-      'relationship': relationship,
-    };
-  }
-
-  factory EmergencyContact.fromMap(String id, Map<String, dynamic> map) {
-    return EmergencyContact(
-      id: id,
-      name: map['name'] ?? '',
-      phoneNumber: map['phoneNumber'] ?? '',
-      relationship: map['relationship'] ?? '',
-    );
-  }
 }
 
 class EmergencyContactsScreen extends StatefulWidget {
   const EmergencyContactsScreen({super.key});
 
   @override
-  State<EmergencyContactsScreen> createState() =>
-      _EmergencyContactsScreenState();
+  State<EmergencyContactsScreen> createState() => _EmergencyContactsScreenState();
 }
 
 class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
+  final List<EmergencyContact> _contacts = [
+    EmergencyContact(
+      name: 'Mom',
+      phoneNumber: '+7 777 123 4567',
+      relationship: 'Family',
+      telegramUsername: 'mom_telegram',
+    ),
+    EmergencyContact(
+      name: 'Best Friend',
+      phoneNumber: '+7 777 765 4321',
+      relationship: 'Friend',
+      telegramUsername: 'qazintelligence',
+    ),
+  ];
+
+  void _addContact() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ContactForm(
+        onSave: (contact) {
+          setState(() {
+            _contacts.add(contact);
+          });
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  void _editContact(int index) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ContactForm(
+        contact: _contacts[index],
+        onSave: (contact) {
+          setState(() {
+            _contacts[index] = contact;
+          });
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  void _deleteContact(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Contact'),
+        content: Text('Are you sure you want to delete ${_contacts[index].name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _contacts.removeAt(index);
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _launchTelegram(String username) async {
+    final url = Uri.parse('https://t.me/$username');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch Telegram')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Emergency Contacts'),
+        backgroundColor: AppTheme.primaryColor,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.1),
+              Colors.white,
+            ],
+          ),
+        ),
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: _contacts.length,
+          itemBuilder: (context, index) {
+            final contact = _contacts[index];
+            return Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white,
+                      AppTheme.primaryColor.withOpacity(0.1),
+                    ],
+                  ),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: CircleAvatar(
+                    radius: 30,
+                    backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
+                    child: Icon(
+                      Icons.person,
+                      size: 30,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  title: Text(
+                    contact.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      Text(
+                        contact.phoneNumber,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      Text(
+                        contact.relationship,
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.phone),
+                        color: AppTheme.primaryColor,
+                        onPressed: () async {
+                          final url = Uri.parse('tel:${contact.phoneNumber}');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                        },
+                      ),
+                      if (contact.telegramUsername != null)
+                        IconButton(
+                          icon: const Icon(Icons.telegram),
+                          color: AppTheme.primaryColor,
+                          onPressed: () => _launchTelegram(contact.telegramUsername!),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        color: AppTheme.primaryColor,
+                        onPressed: () => _editContact(index),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        color: AppTheme.errorColor,
+                        onPressed: () => _deleteContact(index),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addContact,
+        backgroundColor: AppTheme.primaryColor,
+        child: const Icon(Icons.add),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 2, // Contacts tab index
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppTheme.primaryColor,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: 'Map',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Contacts',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.pushReplacementNamed(context, '/home');
+              break;
+            case 1:
+              Navigator.pushReplacementNamed(context, '/map');
+              break;
+            case 2:
+              // Already on contacts screen
+              break;
+            case 3:
+              Navigator.pushReplacementNamed(context, '/settings');
+              break;
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _ContactForm extends StatefulWidget {
+  final EmergencyContact? contact;
+  final Function(EmergencyContact) onSave;
+
+  const _ContactForm({
+    this.contact,
+    required this.onSave,
+  });
+
+  @override
+  State<_ContactForm> createState() => _ContactFormState();
+}
+
+class _ContactFormState extends State<_ContactForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _relationshipController = TextEditingController();
-  bool _isLoading = false;
-  String? _editingContactId;
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+  late TextEditingController _relationshipController;
+  late TextEditingController _telegramController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.contact?.name);
+    _phoneController = TextEditingController(text: widget.contact?.phoneNumber);
+    _relationshipController = TextEditingController(text: widget.contact?.relationship);
+    _telegramController = TextEditingController(text: widget.contact?.telegramUsername);
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _relationshipController.dispose();
+    _telegramController.dispose();
     super.dispose();
   }
 
-  Future<void> _saveContact() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        final authService = Provider.of<AuthService>(context, listen: false);
-        final userId = authService.currentUser?.uid;
-        if (userId == null) return;
-
-        final contact = EmergencyContact(
-          id: _editingContactId ??
-              DateTime.now().millisecondsSinceEpoch.toString(),
-          name: _nameController.text.trim(),
-          phoneNumber: _phoneController.text.trim(),
-          relationship: _relationshipController.text.trim(),
-        );
-
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .collection('emergency_contacts')
-            .doc(contact.id)
-            .set(contact.toMap());
-
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contact saved successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to save contact: ${e.toString()}'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      }
-    }
-  }
-
-  Future<void> _deleteContact(String contactId) async {
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final userId = authService.currentUser?.uid;
-      if (userId == null) return;
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('emergency_contacts')
-          .doc(contactId)
-          .delete();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Contact deleted successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete contact: ${e.toString()}'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showContactDialog([EmergencyContact? contact]) {
-    _editingContactId = contact?.id;
-    _nameController.text = contact?.name ?? '';
-    _phoneController.text = contact?.phoneNumber ?? '';
-    _relationshipController.text = contact?.relationship ?? '';
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(contact == null ? 'Add Contact' : 'Edit Contact'),
-        content: Form(
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Text(
+                widget.contact == null ? 'Add Contact' : 'Edit Contact',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Name',
-                  prefixIcon: Icon(Icons.person_outline),
+                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -172,11 +348,11 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneController,
-                keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
                   labelText: 'Phone Number',
-                  prefixIcon: Icon(Icons.phone_outlined),
+                  border: OutlineInputBorder(),
                 ),
+                keyboardType: TextInputType.phone,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a phone number';
@@ -189,7 +365,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                 controller: _relationshipController,
                 decoration: const InputDecoration(
                   labelText: 'Relationship',
-                  prefixIcon: Icon(Icons.people_outline),
+                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -198,149 +374,42 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _telegramController,
+                decoration: const InputDecoration(
+                  labelText: 'Telegram Username (optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    widget.onSave(
+                      EmergencyContact(
+                        name: _nameController.text,
+                        phoneNumber: _phoneController.text,
+                        relationship: _relationshipController.text,
+                        telegramUsername: _telegramController.text.isEmpty
+                            ? null
+                            : _telegramController.text,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: Text(
+                  widget.contact == null ? 'Add Contact' : 'Save Changes',
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _saveContact,
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Text('Save'),
-          ),
-        ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
-    final userId = authService.currentUser?.uid;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Emergency Contacts'),
-      ),
-      body: userId == null
-          ? const Center(child: Text('Please sign in to manage contacts'))
-          : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(userId)
-                  .collection('emergency_contacts')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error: ${snapshot.error}'),
-                  );
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                final contacts = snapshot.data?.docs.map((doc) {
-                      return EmergencyContact.fromMap(
-                        doc.id,
-                        doc.data() as Map<String, dynamic>,
-                      );
-                    }).toList() ??
-                    [];
-
-                if (contacts.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.people_outline,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No emergency contacts yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: () => _showContactDialog(),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Contact'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: contacts.length,
-                  itemBuilder: (context, index) {
-                    final contact = contacts[index];
-                    return Card(
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppTheme.primaryColor,
-                          child: Text(
-                            contact.name[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        title: Text(contact.name),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(contact.phoneNumber),
-                            Text(
-                              contact.relationship,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined),
-                              onPressed: () => _showContactDialog(contact),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _deleteContact(contact.id),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-      floatingActionButton: userId != null
-          ? FloatingActionButton(
-              onPressed: () => _showContactDialog(),
-              child: const Icon(Icons.add),
-            )
-          : null,
     );
   }
 }

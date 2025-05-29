@@ -1,60 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:flutter_map/flutter_map.dart';
-import '../services/location_service.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../theme/app_theme.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/location_service.dart';
 
 class SafePlace {
-  final String id;
   final String name;
-  final String address;
-  final String type;
+  final String description;
+  final String phoneNumber;
   final LatLng location;
-  final String? phoneNumber;
-  final String? website;
-  final bool isOpen24Hours;
 
   SafePlace({
-    required this.id,
     required this.name,
-    required this.address,
-    required this.type,
+    required this.description,
+    required this.phoneNumber,
     required this.location,
-    this.phoneNumber,
-    this.website,
-    this.isOpen24Hours = false,
   });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'address': address,
-      'type': type,
-      'latitude': location.latitude,
-      'longitude': location.longitude,
-      'phoneNumber': phoneNumber,
-      'website': website,
-      'isOpen24Hours': isOpen24Hours,
-    };
-  }
-
-  factory SafePlace.fromMap(String id, Map<String, dynamic> map) {
-    return SafePlace(
-      id: id,
-      name: map['name'] ?? '',
-      address: map['address'] ?? '',
-      type: map['type'] ?? '',
-      location: LatLng(
-        map['latitude'] ?? 0.0,
-        map['longitude'] ?? 0.0,
-      ),
-      phoneNumber: map['phoneNumber'],
-      website: map['website'],
-      isOpen24Hours: map['isOpen24Hours'] ?? false,
-    );
-  }
 }
 
 class SafePlacesScreen extends StatefulWidget {
@@ -65,47 +26,74 @@ class SafePlacesScreen extends StatefulWidget {
 }
 
 class _SafePlacesScreenState extends State<SafePlacesScreen> {
-  final MapController _mapController = MapController();
-  LatLng? _currentLocation;
-  bool _isLoading = true;
-  String _selectedType = 'All';
-  final List<String> _placeTypes = [
-    'All',
-    'Police Station',
-    'Hospital',
-    'Fire Station',
-    'Shelter',
-    'Community Center',
+  final LocationService _locationService = LocationService();
+  GoogleMapController? _mapController;
+  Position? _currentPosition;
+  final Set<Marker> _markers = {};
+  final List<SafePlace> _safePlaces = [
+    SafePlace(
+      name: 'Crisis Center for Women',
+      description: '24/7 support for women in crisis',
+      phoneNumber: '+7 777 123 4567',
+      location: const LatLng(43.2220, 76.8512),
+    ),
+    SafePlace(
+      name: 'Aman Saulyk Foundation',
+      description: 'Women\'s health and safety center',
+      phoneNumber: '+7 777 234 5678',
+      location: const LatLng(43.2389, 76.8897),
+    ),
+    SafePlace(
+      name: 'Kazakhstan Women\'s Union',
+      description: 'Support and advocacy center',
+      phoneNumber: '+7 777 345 6789',
+      location: const LatLng(43.2567, 76.9286),
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _addSafePlaceMarkers();
   }
 
   Future<void> _getCurrentLocation() async {
     try {
-      final locationService =
-          Provider.of<LocationService>(context, listen: false);
-      final position = await locationService.getCurrentLocation();
-      if (position != null) {
-        setState(() {
-          _currentLocation = LatLng(position.latitude, position.longitude);
-          _isLoading = false;
-        });
-        _mapController.move(_currentLocation!, 15.0);
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to get location: ${e.toString()}'),
-            backgroundColor: AppTheme.errorColor,
+      final position = await _locationService.getCurrentLocation();
+      setState(() {
+        _currentPosition = position;
+        _markers.add(
+          Marker(
+            markerId: const MarkerId('current_location'),
+            position: LatLng(position.latitude, position.longitude),
+            infoWindow: const InfoWindow(title: 'Your Location'),
           ),
         );
-      }
+      });
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(position.latitude, position.longitude),
+          15,
+        ),
+      );
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  void _addSafePlaceMarkers() {
+    for (var place in _safePlaces) {
+      _markers.add(
+        Marker(
+          markerId: MarkerId(place.name),
+          position: place.location,
+          infoWindow: InfoWindow(
+            title: place.name,
+            snippet: place.description,
+          ),
+        ),
+      );
     }
   }
 
@@ -114,295 +102,88 @@ class _SafePlacesScreenState extends State<SafePlacesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Safe Places'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            onPressed: _getCurrentLocation,
-          ),
-        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedType,
-                    decoration: const InputDecoration(
-                      labelText: 'Place Type',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _placeTypes.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Text(type),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedType = value);
-                      }
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      FlutterMap(
-                        mapController: _mapController,
-                        options: MapOptions(
-                          initialCenter: _currentLocation ?? const LatLng(0, 0),
-                          initialZoom: 15.0,
-                          onTap: (_, __) {},
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.bestiehere.app',
-                          ),
-                          if (_currentLocation != null)
-                            MarkerLayer(
-                              markers: [
-                                Marker(
-                                  point: _currentLocation!,
-                                  width: 40,
-                                  height: 40,
-                                  child: const Icon(
-                                    Icons.my_location,
-                                    color: AppTheme.primaryColor,
-                                    size: 40,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('safe_places')
-                                .where('type',
-                                    isEqualTo: _selectedType == 'All'
-                                        ? null
-                                        : _selectedType)
-                                .snapshots(),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasError) {
-                                return Center(
-                                  child: Text('Error: ${snapshot.error}'),
-                                );
-                              }
-
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
-
-                              final places = snapshot.data?.docs.map((doc) {
-                                    return SafePlace.fromMap(
-                                      doc.id,
-                                      doc.data() as Map<String, dynamic>,
-                                    );
-                                  }).toList() ??
-                                  [];
-
-                              return MarkerLayer(
-                                markers: places.map((place) {
-                                  return Marker(
-                                    point: place.location,
-                                    width: 40,
-                                    height: 40,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        showModalBottomSheet(
-                                          context: context,
-                                          builder: (context) =>
-                                              SafePlaceDetails(
-                                            place: place,
-                                          ),
-                                        );
-                                      },
-                                      child: Icon(
-                                        _getPlaceIcon(place.type),
-                                        color: AppTheme.primaryColor,
-                                        size: 40,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      Positioned(
-                        right: 16,
-                        bottom: 16,
-                        child: FloatingActionButton(
-                          onPressed: _getCurrentLocation,
-                          child: const Icon(Icons.my_location),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-
-  IconData _getPlaceIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'police station':
-        return Icons.local_police;
-      case 'hospital':
-        return Icons.local_hospital;
-      case 'fire station':
-        return Icons.fire_truck;
-      case 'shelter':
-        return Icons.home;
-      case 'community center':
-        return Icons.people;
-      default:
-        return Icons.place;
-    }
-  }
-}
-
-class SafePlaceDetails extends StatelessWidget {
-  final SafePlace place;
-
-  const SafePlaceDetails({
-    super.key,
-    required this.place,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
         children: [
-          Row(
-            children: [
-              Icon(
-                _getPlaceIcon(place.type),
-                size: 32,
-                color: AppTheme.primaryColor,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      place.name,
-                      style: Theme.of(context).textTheme.titleLarge,
+          Expanded(
+            child: _currentPosition == null
+                ? const Center(child: CircularProgressIndicator())
+                : GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      ),
+                      zoom: 15,
                     ),
-                    Text(
-                      place.type,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey,
+                    onMapCreated: (controller) {
+                      _mapController = controller;
+                    },
+                    markers: _markers,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                  ),
+          ),
+          Container(
+            height: 200,
+            padding: const EdgeInsets.all(16),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _safePlaces.length,
+              itemBuilder: (context, index) {
+                final place = _safePlaces[index];
+                return Card(
+                  margin: const EdgeInsets.only(right: 16),
+                  child: Container(
+                    width: 200,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          place.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          place.description,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          place.phoneNumber,
+                          style: const TextStyle(
+                            color: AppTheme.primaryColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: () {
+                            _mapController?.animateCamera(
+                              CameraUpdate.newLatLngZoom(
+                                place.location,
+                                15,
+                              ),
+                            );
+                          },
+                          child: const Text('Show on Map'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Address',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          Text(place.address),
-          if (place.phoneNumber != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Phone',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            TextButton.icon(
-              onPressed: () {
-                // TODO: Implement phone call
+                  ),
+                );
               },
-              icon: const Icon(Icons.phone),
-              label: Text(place.phoneNumber!),
             ),
-          ],
-          if (place.website != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Website',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            TextButton.icon(
-              onPressed: () {
-                // TODO: Implement website opening
-              },
-              icon: const Icon(Icons.language),
-              label: Text(place.website!),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(
-                Icons.access_time,
-                size: 16,
-                color: place.isOpen24Hours ? Colors.green : Colors.grey,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                place.isOpen24Hours ? 'Open 24/7' : 'Check hours',
-                style: TextStyle(
-                  color: place.isOpen24Hours ? Colors.green : Colors.grey,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Close'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Implement navigation
-                },
-                icon: const Icon(Icons.directions),
-                label: const Text('Get Directions'),
-              ),
-            ],
           ),
         ],
       ),
     );
-  }
-
-  IconData _getPlaceIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'police station':
-        return Icons.local_police;
-      case 'hospital':
-        return Icons.local_hospital;
-      case 'fire station':
-        return Icons.fire_truck;
-      case 'shelter':
-        return Icons.home;
-      case 'community center':
-        return Icons.people;
-      default:
-        return Icons.place;
-    }
   }
 }
