@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "420353195327",
+    "project_id": "bestiehere-1a0ac",
+    "storage_bucket": "bestiehere-1a0ac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:420353195327:android:4ca359601255712ccf678a",
+        "android_client_info": {
+          "package_name": "com.yourdomain.bestiehere"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "420353195327-nvvu2gclds9tnrqeufraj41v8s4bea9g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7m5ySWEj8_QVC0Fnn43YcT8YZNWR6-xQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "420353195327-nvvu2gclds9tnrqeufraj41v8s4bea9g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
