@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../models/emergency_contact.dart';
 import '../models/safe_place.dart';
+import '../services/voice_recognition_service.dart';
+import '../services/emergency_service.dart';
 
 class SafetyScreen extends StatefulWidget {
   const SafetyScreen({super.key});
@@ -20,11 +22,125 @@ class _SafetyScreenState extends State<SafetyScreen> {
   bool _isTracking = false;
   final MapController _mapController = MapController();
   LatLng? _currentLatLng;
+  final VoiceRecognitionService _voiceService = VoiceRecognitionService();
+  final EmergencyService _emergencyService = EmergencyService();
+  String _recognizedText = '';
+  bool _isListening = false;
 
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _initializeVoiceRecognition();
+  }
+
+  Future<void> _initializeVoiceRecognition() async {
+    try {
+      final initialized = await _voiceService.initialize();
+      if (!initialized) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Failed to initialize voice recognition. Please check microphone permissions.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error initializing voice recognition: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('An error occurred while initializing voice recognition.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _startVoiceRecognition() async {
+    try {
+      if (!_isListening) {
+        setState(() {
+          _isListening = true;
+        });
+        await _voiceService.startListening((text) {
+          setState(() {
+            _recognizedText = text;
+            if (text.toLowerCase().contains('help') ||
+                text.toLowerCase().contains('emergency') ||
+                text.toLowerCase().contains('sos')) {
+              _triggerEmergency();
+            }
+          });
+        });
+      }
+    } catch (e) {
+      debugPrint('Error starting voice recognition: $e');
+      setState(() {
+        _isListening = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Failed to start voice recognition. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopVoiceRecognition() async {
+    try {
+      if (_isListening) {
+        await _voiceService.stopListening();
+        setState(() {
+          _isListening = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error stopping voice recognition: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error stopping voice recognition.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _triggerEmergency() async {
+    try {
+      await _emergencyService.triggerEmergencyCall();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Emergency services have been contacted.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error triggering emergency: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Failed to contact emergency services. Please try again or call manually.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -91,9 +207,9 @@ class _SafetyScreenState extends State<SafetyScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.accentColor.withOpacity(0.1),
+        color: AppTheme.accentColor.withAlpha(26),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.accentColor.withOpacity(0.3)),
+        border: Border.all(color: AppTheme.accentColor.withAlpha(77)),
       ),
       child: Column(
         children: [
@@ -113,15 +229,33 @@ class _SafetyScreenState extends State<SafetyScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {
-              _makePhoneCall('102');
-            },
+            onPressed: _triggerEmergency,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.accentColor,
               minimumSize: const Size(double.infinity, 50),
             ),
             child: const Text('Call Emergency Services'),
           ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed:
+                _isListening ? _stopVoiceRecognition : _startVoiceRecognition,
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  _isListening ? Colors.red : AppTheme.primaryColor,
+              minimumSize: const Size(double.infinity, 50),
+            ),
+            child: Text(_isListening
+                ? 'Stop Voice Recognition'
+                : 'Start Voice Recognition'),
+          ),
+          if (_recognizedText.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Recognized: $_recognizedText',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
         ],
       ),
     );
@@ -171,8 +305,9 @@ class _SafetyScreenState extends State<SafetyScreen> {
         Container(
           height: 300,
           decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withAlpha(26),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+            border: Border.all(color: AppTheme.primaryColor.withAlpha(77)),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
@@ -181,8 +316,9 @@ class _SafetyScreenState extends State<SafetyScreen> {
                 : FlutterMap(
                     mapController: _mapController,
                     options: MapOptions(
-                      center: _currentLatLng,
-                      zoom: 13.0,
+                      initialCenter:
+                          _currentLatLng ?? const LatLng(43.2220, 76.8512),
+                      initialZoom: 13.0,
                     ),
                     children: [
                       TileLayer(
